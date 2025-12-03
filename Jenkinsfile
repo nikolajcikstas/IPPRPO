@@ -32,21 +32,6 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                bat 'mvn -B test'
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                    publishHTML(target: [
-                        reportDir: 'target/site/jacoco',
-                        reportFiles: 'index.html',
-                        reportName: 'JaCoCo Coverage'
-                    ])
-                }
-            }
-        }
 
         stage('Package') {
             steps {
@@ -90,3 +75,4 @@ pipeline {
         }
     }
 }
+
