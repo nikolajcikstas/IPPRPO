@@ -17,11 +17,6 @@ pipeline {
 
   stages {
 
-        stage('Fix Git Ownership') {
-            steps {
-                bat 'git config --global --add safe.directory D:/repos/java-maven-ci-demo.git'
-      }
-    }
 
     stage('Checkout') {
             steps {
@@ -99,3 +94,4 @@ pipeline {
     }
   }
 }
+
