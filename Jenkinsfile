@@ -1,97 +1,92 @@
 pipeline {
     agent any
 
-  options {
+    options {
         timestamps()
-    buildDiscarder(logRotator(numToKeepStr: '20'))
-    disableConcurrentBuilds()
-  }
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+        disableConcurrentBuilds()
+    }
 
-  environment {
+    environment {
         MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
-  }
+    }
 
-  triggers {
+    triggers {
         pollSCM('H/2 * * * *')
-  }
+    }
 
-  stages {
-
-
-    stage('Checkout') {
+    stages {
+        stage('Checkout') {
             steps {
                 checkout([$class: 'GitSCM',
-          branches: [[name: '*/main']],   // Явно указываем main
-          userRemoteConfigs: [[url: 'file:///D:/repos/java-maven-ci-demo.git']]
-        ])
-      }
-    }
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: 'https://github.com/nikolajcikstas/IPPRPO.git', credentialsId: 'github-creds-id']]
+                ])
+            }
+        }
 
-    stage('Build') {
+        stage('Build') {
             steps {
                 bat 'mvn -v'
-        bat 'mvn -B -U clean compile'
-      }
-    }
+                bat 'mvn -B -U clean compile'
+            }
+        }
 
-    stage('Test') {
+        stage('Test') {
             steps {
                 bat 'mvn -B test'
-      }
-      post {
+            }
+            post {
                 always {
                     junit '**/target/surefire-reports/*.xml'
-
-          publishHTML(target: [
-            reportDir: 'target/site/jacoco',
-            reportFiles: 'index.html',
-            reportName: 'JaCoCo Coverage'
-          ])
+                    publishHTML(target: [
+                        reportDir: 'target/site/jacoco',
+                        reportFiles: 'index.html',
+                        reportName: 'JaCoCo Coverage'
+                    ])
+                }
+            }
         }
-      }  
-    }
 
-    stage('Package') {
+        stage('Package') {
             steps {
                 bat 'mvn -B package'
-      }
-      post {
+            }
+            post {
                 success {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
         }
-      }
-    }
 
-    stage('Quality gates') {
+        stage('Quality gates') {
             when {
                 anyOf {
                     branch 'develop'
-          branch 'main'
-        }
-      }
-      steps {
+                    branch 'main'
+                }
+            }
+            steps {
                 echo 'Quality checks placeholder'
-      }
-    }
+            }
+        }
 
-    stage('Deploy (local)') {
+        stage('Deploy (local)') {
             when {
                 branch 'main'
-      }
-      steps {
-                // Windows не поддерживает nohup — заменяем на start /B
-        bat 'start /B java -jar target\\java-maven-ci-demo-1.0.0.jar > app.log 2>&1'
-      }
+            }
+            steps {
+                bat 'start /B java -jar target\\*.jar > app.log 2>&1'
+            }
+        }
     }
-  }
 
-  post {
+    post {
         success {
-            echo "Build successful for ${env.BRANCH_NAME}"
+            echo "Build successful"
+        }
+        failure {
+            echo "Build failed"
+        }
     }
-    failure {
-            echo "Build failed for ${env.BRANCH_NAME}"
-    }
-  }
 }
-
